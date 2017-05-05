@@ -4,10 +4,10 @@
 """ Configura los logs """
 
 import logging
-import config
+from sigilaalarmas.config import Config
 
-LEVEL = logging.getLevelName(config.Config().loglevel)
-LOGFILE = config.Config().logfile
+LEVEL = logging.getLevelName(Config().loglevel)
+LOGFILE = Config().logfile
 
 class Logger(object):
     """ Clase para la configuración de los logs """

@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 import sys
-from daemon import EventManagerDaemon
+from sigilaalarmas.daemon import EventManagerDaemon
 
 def usagehelp():
     """ Help Function """

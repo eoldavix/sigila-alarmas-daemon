@@ -9,8 +9,8 @@ import time
 import requests
 import schedule
 import mysql.connector as mysql
-from config import Config
-from logger import Logger
+from sigilaalarmas.config import Config
+from sigilaalarmas.logger import Logger
 
 LOG = Logger().configure_logs()
 
@@ -152,7 +152,7 @@ class EventManager(object):
                       priority,
                       minutes
                      )
-            schedule.every(int(minutes)).seconds.do(self.execute_with_priority, priority)
+            schedule.every(int(minutes)).minutes.do(self.execute_with_priority, priority)
 
         while True:
             schedule.run_pending()

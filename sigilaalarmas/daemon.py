@@ -8,7 +8,7 @@ import os
 import sys
 import time
 import signal
-from eventmanager import EventManager
+from sigilaalarmas.eventmanager import EventManager
 
 
 class Daemon(object):
