@@ -28,6 +28,7 @@ class Config(object):
 
             # events
             self.events = cfg['events']
+            self.event_priority_time = cfg['event_config']['priority_time']
 
             # logs
             self.logfile = cfg['logger']['file']
