@@ -4,7 +4,10 @@
 """ TODO: Documentar """
 
 import json
+import datetime
+import time
 import requests
+import schedule
 import mysql.connector as mysql
 from config import Config
 from logger import Logger
@@ -70,14 +73,16 @@ class EventManager(object):
 
             response = requests.post(url, payload, headers=headers)
 
-            return json.dumps(response.text)
+            return response.text
 
         except ServerNotFound as myerror:
             LOG.error("Servidor no encontrado: %s", myerror)
 
     def update_database(self, data):
         """ Método para actualizar la base de datos una vez obtenidos los datos
-            desde el webservice """
+            desde el webservice. Recibe los datos en raw. """
+
+        data = json.loads(data)
 
         conn = mysql.connect(user=self.config.database['user'],
                              password=self.config.database['password'],
@@ -85,17 +90,83 @@ class EventManager(object):
                              database=self.config.database['db']
                             )
 
+        cursor = conn.cursor()
 
+        LOG.debug("Actualizando base de datos. Insertando %i filas. ", len(data))
+
+        for row in data:
+            query = ('INSERT INTO alarmas '
+                     '(ip_server, state_description, state, state_timestamp) '
+                     'VALUES ("%s", "%s", "%i", "%s") '
+                     'ON DUPLICATE KEY UPDATE '
+                     '`check_timestamp` = NOW();\n'
+                    )
+
+            st_ts = datetime.datetime.fromtimestamp(int(row[3])
+                                                   ).strftime('%Y-%m-%d %H:%M:%S')
+
+            cursor.execute(query % (row[0],
+                                    row[1],
+                                    row[2],
+                                    st_ts
+                                   ))
+
+        try:
+            conn.commit()
+        except mysql.Error as myerror:
+            LOG.error("Excepción encontrada: %s", myerror)
+        finally:
+            cursor.close()
+            conn.close()
+
+    def execute_with_priority(self, priority):
+        """ Método para la ejecución de todos los eventos
+            con una prioridad pasada sobre todos los servidores. """
+
+        LOG.debug("Ejecutando eventos con prioridad %s", priority)
+        for event in self.config.events:
+            myevent = self.config.get_event(event)
+            if myevent.priority == priority:
+                LOG.debug("Evento %s encontrado con prioridad %s", myevent.string, priority)
+                payload = self.get_payload(event)
+                for server in self.config.nagios_servers:
+                    LOG.debug("Solicitando datos del evento %s en servidor %s",
+                              myevent.string,
+                              server
+                             )
+                    data = self.call_webservice(server, payload)
+                    try:
+                        self.update_database(data)
+                    except ValueError:
+                        msg = "Error al intentar actualizar base de datos. "
+                        msg += "Servidor: %s. Evento: %s" % (server, event)
+                        LOG.error(msg)
+
+    def events_scheduling(self):
+        """ Programación de las ejecuciones según el tiempo establecido """
+        for priority in self.config.event_priority_time:
+            LOG.debug("Ejecutando por primera vez con prioridad %s", priority)
+            self.execute_with_priority(priority)
+            minutes = self.config.event_priority_time[priority]
+            LOG.debug("Configurando programación de prioridad %s cada %s minutos",
+                      priority,
+                      minutes
+                     )
+            schedule.every(int(minutes)).seconds.do(self.execute_with_priority, priority)
+
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
 def main():
     """ Main """
     eventmanager = EventManager()
 
-    # for alarmas in eventmanager.all_events:
-    #     print eventmanager.get_payload(alarmas)
+    # data = eventmanager.call_webservice('nagios-se', eventmanager.get_payload('dns'))
+    # eventmanager.update_database(data)
 
-    data = eventmanager.call_webservice('nagios-se', eventmanager.get_payload('dns'))
-    eventmanager.update_database(data)
+    # eventmanager.execute_with_priority(1)
+    eventmanager.events_scheduling()
 
 if __name__ == '__main__':
     main()
