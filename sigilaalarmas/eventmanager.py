@@ -9,8 +9,8 @@ import time
 import requests
 import schedule
 import mysql.connector as mysql
-from sigilaalarmas.config import Config
-from sigilaalarmas.logger import Logger
+from config import Config
+from logger import Logger
 
 LOG = Logger().configure_logs()
 
@@ -40,13 +40,15 @@ class EventManager(object):
 
         string = myevent.string
         columns = myevent.columns
+        # servers = myevent.servers
 
         query = "GET services\\nColumns: %s\\nFilter: description =" % columns
 
-        filter_string = ""
+        # filter_string = ''.join("Filter: host_name ~ %s\\n" % x for x in servers)
         if filters:
-            for myfilter in filters:
-                filter_string += "Filter: %s\\n" % myfilter
+            filter_string = ''.join("Filter: %s\\n" % x for x in filters)
+            # for myfilter in filters:
+                # filter_string += "Filter: %s\\n" % myfilter
 
         payload = '{\n'
         payload += ' "secret": "%s",\n' % self.config.webservice.key
@@ -128,19 +130,20 @@ class EventManager(object):
             myevent = self.config.get_event(event)
             if myevent.priority == priority:
                 LOG.debug("Evento %s encontrado con prioridad %s", myevent.string, priority)
-                payload = self.get_payload(event)
-                for server in self.config.nagios_servers:
-                    LOG.debug("Solicitando datos del evento %s en servidor %s",
-                              myevent.string,
-                              server
-                             )
-                    data = self.call_webservice(server, payload)
-                    try:
-                        self.update_database(data)
-                    except ValueError:
-                        msg = "Error al intentar actualizar base de datos. "
-                        msg += "Servidor: %s. Evento: %s" % (server, event)
-                        LOG.error(msg)
+                for srv in myevent.servers:
+                    payload = self.get_payload(event, ["host_name ~ %s" % srv])
+                    for server in self.config.nagios_servers:
+                        LOG.debug("Solicitando datos del evento %s en servidor %s",
+                                  myevent.string,
+                                  server
+                                 )
+                        data = self.call_webservice(server, payload)
+                        try:
+                            self.update_database(data)
+                        except ValueError:
+                            msg = "Error al intentar actualizar base de datos. "
+                            msg += "Servidor: %s. Evento: %s" % (server, event)
+                            LOG.error(msg)
 
     def events_scheduling(self):
         """ Programación de las ejecuciones según el tiempo establecido """
@@ -158,15 +161,25 @@ class EventManager(object):
             schedule.run_pending()
             time.sleep(1)
 
-def main():
-    """ Main """
-    eventmanager = EventManager()
+    def execute_all(self):
+        """ Método para la ejecución de todos los eventos
+            sobre todos los servidores. """
 
-    # data = eventmanager.call_webservice('nagios-se', eventmanager.get_payload('dns'))
-    # eventmanager.update_database(data)
-
-    # eventmanager.execute_with_priority(1)
-    eventmanager.events_scheduling()
-
-if __name__ == '__main__':
-    main()
+        LOG.info("Realizando actualización de todos los eventos")
+        for event in self.config.events:
+            LOG.info("Actualizando base de datos para evento %s", event)
+            myevent = self.config.get_event(event)
+            for srv in myevent.servers:
+                payload = self.get_payload(event, ["host_name ~ %s" % srv])
+                for server in self.config.nagios_servers:
+                    LOG.debug("Solicitando datos del evento %s en servidor %s",
+                              myevent.string,
+                              server
+                             )
+                    data = self.call_webservice(server, payload)
+                    try:
+                        self.update_database(data)
+                    except ValueError:
+                        msg = "Error al intentar actualizar base de datos. "
+                        msg += "Servidor: %s. Evento: %s" % (server, event)
+                        LOG.error(msg)

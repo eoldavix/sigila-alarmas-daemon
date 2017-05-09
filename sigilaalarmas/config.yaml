@@ -192,4 +192,4 @@ events:
 
 logger:
   file:              /tmp/sigila-alarmas.log
-  level:             DEBUG
+  level:             INFO

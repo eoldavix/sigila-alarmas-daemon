@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 import sys
-from sigilaalarmas.daemon import EventManagerDaemon
+from daemon import EventManagerDaemon
 
 def usagehelp():
     """ Help Function """
@@ -14,7 +14,7 @@ def usagehelp():
 
 def main():
     """ Main Function """
-    daemon = EventManagerDaemon("/var/run/sigilaalarmas.pid")
+    daemon = EventManagerDaemon("/var/run/pid")
 
     actions = {'start': daemon.start,
                'stop': daemon.stop,
