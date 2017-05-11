@@ -1,0 +1,195 @@
+database:
+  host:              localhost
+  user:              sigila-alarmas
+  password:          sigila-alarmas
+  db:                sigila-alarmas
+
+nagios_servers:
+  servers:
+    - nagios-se
+    - nagios-al
+    - nagios-ca
+    - nagios-hu
+    - nagios-ja
+    - nagios-gr
+    - nagios-ma
+    - nagios-co
+  url:               query
+  key:               Z0eoG3R01RRiiX9M3ZRY6myA1690g2kW
+  content-type:      application/json
+  method:            POST
+  port:              10000
+
+event_config:
+  priority_time:
+    1:               120
+    2:               360
+    3:               720
+
+events:
+  dns:
+    string:          Resolucion DNS Andared
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  puppet:
+    string:          Agente Puppet
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  bandwith:
+    string:          Bandwith Bytes
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  read_only_f0:
+    string:          En Solo Lectura F0
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+
+  read_only_c0:
+    string:          En Solo Lectura C0
+    columns:         host_address description state last_state_change
+    priority:        3
+    servers:
+      - c0
+
+  dpkg:
+    string:          Estado Paqueteria
+    columns:         host_address description state last_state_change
+    priority:        3
+    servers:
+      - f0
+      - c0
+
+  cron:
+    string:          Estado cron
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+      - c0
+
+  cpu:
+    string:          Estado de la CPU
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  dhcp_lease:
+    string:          IPs libres en DHCP
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  parts:
+    string:          Particiones
+    columns:         host_address description state last_state_change
+    priority:        3
+    servers:
+      - f0
+      - c0
+
+  switch_alive:
+    string:          Ping Switch
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+      - c0
+
+  defunct_process:
+    string:          Procesos en estado defunct
+    columns:         host_address description state last_state_change
+    priority:        3
+    servers:
+      - f0
+      - c0
+
+  network_alum:
+    string:          Red de Alumnos
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  network_gest:
+    string:          Red de Gestion
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  network_prof:
+    string:          Red de Profesores
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - f0
+      - c0
+
+  ssh_service:
+    string:          Servicio ssh
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+      - c0
+
+  backup:
+    string:          Sistema Backups
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+      - c0
+
+  last_puppet_exec:
+    string:          Ultima Ejecucion Puppet
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - f0
+      - c0
+
+  ldap_sync:
+    string:          Estado sync ldap
+    columns:         host_address description state last_state_change
+    priority:        2
+    servers:
+      - c0
+
+  srv0_status:
+    string:          Estado de las maquinas virtuales
+    columns:         host_address description state last_state_change
+    priority:        1
+    servers:
+      - srv0
+
+  icmp:
+    string:          ICMP
+    columns:         host_address description state last_state_change
+    priority:        3
+    servers:
+      - srv0
+
+logger:
+  file:              /tmp/sigila-alarmas.log
+  level:             INFO
