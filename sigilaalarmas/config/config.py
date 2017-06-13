@@ -3,14 +3,16 @@
 
 """ Módulo de carga de configuración """
 
+import os
 from collections import namedtuple
 import yaml
 
 class Config(object):
     """ Carga la configuración desde el fichero config.yaml """
     def __init__(self):
-
-        with open("config.yaml", 'r') as ymlfile:
+        configfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
+        
+        with open(configfile, 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
 
             # database

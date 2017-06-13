@@ -1,2 +1,2 @@
 [TYPECHECK]
-ignored-classes=Webservice, Event
+ignored-classes=Webservice,Event

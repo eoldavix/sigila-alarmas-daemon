@@ -4,7 +4,7 @@
 """ Configura los logs """
 
 import logging
-from sigilaalarmas.config import Config
+from .config import Config
 
 LEVEL = logging.getLevelName(Config().loglevel)
 LOGFILE = Config().logfile
