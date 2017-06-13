@@ -67,8 +67,10 @@ class EventManager(object):
           `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
           `id_fk_tipo_alarmas` int(5) NOT NULL,
           `state` int(1) NOT NULL,
-          `state_timestamp` timestamp NULL DEFAULT NULL,
-          `check_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `state_timestamp` int(11) NULL DEFAULT NULL,
+          `check_timestamp` int(11) NULL DEFAULT NULL,
+          `id_fk_operadores` varchar(15) NULL DEFAULT NULL,
+          `revisada` int(1) NOT NULL DEFAULT 0,
           PRIMARY KEY (`id`),
           UNIQUE KEY `alarmas_daemon_events_index` (`ip_server`,`id_fk_tipo_alarmas`,`state`,`state_timestamp`)
         ) ENGINE=InnoDB  DEFAULT CHARSET=utf8; """
@@ -130,21 +132,21 @@ class EventManager(object):
 
         for row in data:
             query = ('INSERT INTO alarmas_daemon_events '
-                     '(id_fk_tipo_alarmas, ip_server, state, state_timestamp) '
-                     'SELECT id, "%s", "%i", "%s"  '
+                     '(id_fk_tipo_alarmas, ip_server, state, state_timestamp, check_timestamp) '
+                     'SELECT id, "%s", "%i", "%s", UNIX_TIMESTAMP()  '
                      'FROM alarmas_tipo '
                      'WHERE nombre = "%s" '
                      'ON DUPLICATE KEY UPDATE '
-                     '`check_timestamp` = NOW();\n'
+                     '`check_timestamp` = UNIX_TIMESTAMP();\n'
                     )
 
-            st_ts = datetime.datetime.fromtimestamp(int(row[3])
-                                                   ).strftime('%Y-%m-%d %H:%M:%S')
+            # st_ts = datetime.datetime.fromtimestamp(int(row[3])
+            #                                        ).strftime('%Y-%m-%d %H:%M:%S')
 
             try:
                 cursor.execute(query % (row[0],
                                         row[2],
-                                        st_ts,
+                                        row[3],
                                         row[1],
                                        ))
             except mysql.errors.ProgrammingError:
