@@ -31,7 +31,7 @@ pip install -r requirement.txt
 
 # Creación de la tabla alarmas_daemon_events.
 ```
-        CREATE TABLE IF NOT EXISTS `alarmas` (
+        CREATE TABLE IF NOT EXISTS `alarmas_daemon_events` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
           `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
           `state_description` varchar(255) CHARACTER SET utf8 NOT NULL,
