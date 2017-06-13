@@ -65,6 +65,7 @@ class EventManager(object):
         CREATE TABLE IF NOT EXISTS `alarmas_daemon_events` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
           `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
+          `id_fk_sedes` int(11) NULL DEFAULT NULL,
           `id_fk_tipo_alarmas` int(5) NOT NULL,
           `state` int(1) NOT NULL,
           `state_timestamp` int(11) NULL DEFAULT NULL,
@@ -131,9 +132,14 @@ class EventManager(object):
         LOG.debug("Actualizando base de datos. Insertando %i filas. ", len(data))
 
         for row in data:
+            get_fk_sede_query = ('SELECT fk_sedes '
+                                 'FROM hosts '
+                                 'WHERE ip LIKE "%s" '
+                                )
+
             query = ('INSERT INTO alarmas_daemon_events '
-                     '(id_fk_tipo_alarmas, ip_server, state, state_timestamp, check_timestamp) '
-                     'SELECT id, "%s", "%i", "%s", UNIX_TIMESTAMP()  '
+                     '(id_fk_tipo_alarmas, ip_server, id_fk_sedes, state, state_timestamp, check_timestamp) '
+                     'SELECT id, "%s", "%i", "%i", "%s", UNIX_TIMESTAMP()  '
                      'FROM alarmas_tipo '
                      'WHERE nombre = "%s" '
                      'ON DUPLICATE KEY UPDATE '
@@ -143,8 +149,13 @@ class EventManager(object):
             # st_ts = datetime.datetime.fromtimestamp(int(row[3])
             #                                        ).strftime('%Y-%m-%d %H:%M:%S')
 
+            cursor.execute(get_fk_sede_query % row[0])
+            for campo in cursor:
+                sede = campo[0]
+
             try:
                 cursor.execute(query % (row[0],
+                                        int(sede),
                                         row[2],
                                         row[3],
                                         row[1],
