@@ -29,17 +29,6 @@ apt-get install libyaml-dev
 pip install -r requirement.txt
 ```
 
-# Creación de la tabla alarmas_daemon_events.
-```
-        CREATE TABLE IF NOT EXISTS `alarmas_daemon_events` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
-          `state_description` varchar(255) CHARACTER SET utf8 NOT NULL,
-          `state` int(1) NOT NULL,
-          `state_timestamp` timestamp NULL DEFAULT NULL,
-          `check_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `alarmas_index` (`ip_server`,`state_description`,`state`,`state_timestamp`)
-        ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+# Configuración
 
-```
+Modificar los campos `database/host`, `database/user`, `database/password` y `database/db` de **sigilaalarmas/config/config.yaml** para la correcta configuración de la base de datos
