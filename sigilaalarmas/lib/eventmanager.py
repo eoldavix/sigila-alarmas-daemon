@@ -59,6 +59,38 @@ class EventManager(object):
 
         return payload
 
+    def init_database(self):
+        """ Inicializa la base de datos """
+        query = """
+        CREATE TABLE IF NOT EXISTS `alarmas_daemon_events` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
+          `id_fk_tipo_alarmas` int(5) NOT NULL,
+          `state` int(1) NOT NULL,
+          `state_timestamp` timestamp NULL DEFAULT NULL,
+          `check_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `alarmas_daemon_events_index` (`ip_server`,`id_fk_tipo_alarmas`,`state`,`state_timestamp`)
+        ) ENGINE=InnoDB  DEFAULT CHARSET=utf8; """
+
+        conn = mysql.connect(user=self.config.database['user'],
+                             password=self.config.database['password'],
+                             host=self.config.database['host'],
+                             database=self.config.database['db']
+                            )
+
+        cursor = conn.cursor()
+
+        cursor.execute(query)
+
+        try:
+            conn.commit()
+        except mysql.Error as myerror:
+            LOG.error("Excepción encontrada: %s", myerror)
+        finally:
+            cursor.close()
+            conn.close()
+
     def call_webservice(self, server, payload):
         """ Ejecución de payload sobre un webservice """
 
@@ -97,9 +129,11 @@ class EventManager(object):
         LOG.debug("Actualizando base de datos. Insertando %i filas. ", len(data))
 
         for row in data:
-            query = ('INSERT INTO alarmas '
-                     '(ip_server, state_description, state, state_timestamp) '
-                     'VALUES ("%s", "%s", "%i", "%s") '
+            query = ('INSERT INTO alarmas_daemon_events '
+                     '(id_fk_tipo_alarmas, ip_server, state, state_timestamp) '
+                     'SELECT id, "%s", "%i", "%s"  '
+                     'FROM alarmas_tipo '
+                     'WHERE nombre = "%s" '
                      'ON DUPLICATE KEY UPDATE '
                      '`check_timestamp` = NOW();\n'
                     )
@@ -107,11 +141,16 @@ class EventManager(object):
             st_ts = datetime.datetime.fromtimestamp(int(row[3])
                                                    ).strftime('%Y-%m-%d %H:%M:%S')
 
-            cursor.execute(query % (row[0],
-                                    row[1],
-                                    row[2],
-                                    st_ts
-                                   ))
+            try:
+                cursor.execute(query % (row[0],
+                                        row[2],
+                                        st_ts,
+                                        row[1],
+                                       ))
+            except mysql.errors.ProgrammingError:
+                # En caso de error, se inicializa la base de datos
+                self.init_database()
+
 
         try:
             conn.commit()
