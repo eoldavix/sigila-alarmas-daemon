@@ -97,7 +97,7 @@ class EventManager(object):
         LOG.debug("Actualizando base de datos. Insertando %i filas. ", len(data))
 
         for row in data:
-            query = ('INSERT INTO alarmas '
+            query = ('INSERT INTO alarmas_daemon_events '
                      '(ip_server, state_description, state, state_timestamp) '
                      'VALUES ("%s", "%s", "%i", "%s") '
                      'ON DUPLICATE KEY UPDATE '
