@@ -64,17 +64,17 @@ class EventManager(object):
         query = """
         CREATE TABLE IF NOT EXISTS `alarmas_daemon_events` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
-          `ip_server` varchar(16) CHARACTER SET utf8 NOT NULL,
+          `ip_server` varchar(16) NOT NULL,
           `id_fk_sedes` int(11) NULL DEFAULT NULL,
           `id_fk_tipo_alarmas` int(5) NOT NULL,
           `state` int(1) NOT NULL,
           `state_timestamp` int(11) NULL DEFAULT NULL,
           `check_timestamp` int(11) NULL DEFAULT NULL,
-          `id_fk_operadores` varchar(15) NULL DEFAULT NULL,
+          `id_fk_operadores` varchar(15) NOT NULL DEFAULT "",
           `revisada` int(1) NOT NULL DEFAULT 0,
           PRIMARY KEY (`id`),
           UNIQUE KEY `alarmas_daemon_events_index` (`ip_server`,`id_fk_tipo_alarmas`,`state`,`state_timestamp`)
-        ) ENGINE=InnoDB  DEFAULT CHARSET=utf8; """
+        ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE utf8_spanish_ci; """
 
         conn = mysql.connect(user=self.config.database['user'],
                              password=self.config.database['password'],
