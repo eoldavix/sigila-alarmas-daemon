@@ -6,12 +6,13 @@
 import os
 from collections import namedtuple
 import yaml
+import mysql.connector as mysql
 
 class Config(object):
     """ Carga la configuración desde el fichero config.yaml """
     def __init__(self):
         configfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
-        
+
         with open(configfile, 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
 
@@ -35,6 +36,23 @@ class Config(object):
             # logs
             self.logfile = cfg['logger']['file']
             self.loglevel = cfg['logger']['level']
+
+    def  get_events_from_database(self):
+        """ Carga la configuración de los eventos desde base de datos """
+
+        conn = mysql.connect(user=self.database['user'],
+                             password=self.database['password'],
+                             host=self.database['host'],
+                             database=self.database['db']
+                            )
+
+        cursor = conn.cursor()
+
+        configtable = 'alarmas_daemon_eventconfig'
+
+        sql = 'SELECT event, string, columns FROM %s;'
+
+        raise NotImplementedError
 
     def show(self):
         """ Imprime la configuración en pantalla """

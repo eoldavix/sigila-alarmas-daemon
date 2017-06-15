@@ -1,0 +1,19 @@
+version: '3'
+services:
+  database:
+    image: mariadb:latest
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    volumes:
+      - ./database-volume/data:/var/lib/mysql
+    env_file:
+      - .env
+
+  alarmas:
+    image: dockreg01.virt.cga/desarrollo/sigila-alarmas-daemon:latest
+    depends_on:
+      - database
+    links:
+      - database:mariadb
+    env_file:
+      - .env

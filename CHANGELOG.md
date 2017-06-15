@@ -1,4 +1,6 @@
-## 0.1.0 (2017-05-08)
-Características:
-  - Versión Inicial
-  - Configuración del demonio en fichero yaml
+# Changelog
+
+Este fichero sólo refleja los cambios realizados en esta imagen.
+
+**0.3.0**
+-   sigila-alarmas-daemon: Demonio para la sincronización de Nagios con Sigila.
