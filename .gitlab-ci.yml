@@ -1,0 +1,226 @@
+image: docker:latest
+
+variables:
+  URL_REGISTRY: $CI_REGISTRY
+  ID_REGISTRY: gitlab-ci-token
+  REGISTRY_PASS: $CI_JOB_TOKEN
+  PROJECT_NAME: $CI_PROJECT_NAME
+  PROJECT_NAMESPACE: $CI_PROJECT_NAMESPACE
+  REGISTRY_IMAGE: $CI_REGISTRY_IMAGE
+  TAG: $CI_COMMIT_REF_NAME
+
+stages:
+  - test
+  - build
+  - push
+  - clean
+
+before_script:
+  - hostname
+
+.build_template:
+  variables: &build_variables
+    PROXY_BUILD: proxycache.virt.cga:8888
+    NO_PROXY_BUILD: localhost,.virt.cga
+    PROXY_ARG: "--build-arg http_proxy=http://$PROXY_BUILD \
+    --build-arg https_proxy=http://$PROXY_BUILD \
+    --build-arg ftp_proxy=http://$PROXY_BUILD \
+    --build-arg no_proxy=$NO_PROXY_BUILD"
+    LABELS_ARG: "--build-arg VCS_REF=$CI_COMMIT_SHA
+    --build-arg PROJECT_NAME=$CI_PROJECT_NAME
+    --build-arg VERSION=$CI_COMMIT_TAG
+    --build-arg PROJECT_URL=$CI_PROJECT_URL"
+
+.proxy_template:
+  variables: &proxy_variables
+    PROXY_BUILD: proxycache.virt.cga:8888
+    NO_PROXY_BUILD: localhost,.virt.cga
+
+test:commit:
+  image: $CI_REGISTRY/capacidad/git-commit-linter:latest
+  stage: test
+  variables: *proxy_variables
+  script:
+    - echo "Realizando test linter del commit message"
+    - git log -1 --pretty=%B  $CI_COMMIT_SHA | gitlint
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - /^testrepo-v.*$/
+    - /^testdockerfile-v.*$/
+    - master
+  #allow_failure: true
+
+test:repo:
+  image: $CI_REGISTRY/capacidad/repository-linter:develop
+  stage: test
+  variables: *proxy_variables
+  script:
+    - test_repo
+    - test_docker
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - /^testrepo-v.*$/
+    - /^testdockerfile-v.*$/
+    - master
+
+test:hadolint:
+  image: $CI_REGISTRY/capacidad/hadolint:latest
+  stage: test
+  variables: *proxy_variables
+  script:
+    - echo "Realizando test linter con hadolint"
+    - hadolint --ignore DL4000 --ignore DL3013 --ignore DL3008 --ignore SC2154 Dockerfile
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - /^testdockerfile-v.*$/
+    - master
+  #allow_failure: true
+
+test:dockerlint:
+  image: $CI_REGISTRY/capacidad/dockerfile_lint:latest
+  stage: test
+  variables: *proxy_variables
+  script:
+    - echo "Realizando test linter con dockerfile_lint"
+    - dockerfile_lint
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - /^testdockerfile-v.*$/
+    - master
+  #allow_failure: true
+
+test:dockerfilelint:
+  image: $CI_REGISTRY/capacidad/dockerlint:latest
+  stage: test
+  variables: *proxy_variables
+  script:
+    - echo "Realizando test linter con dockerlint"
+    - ls -lh
+    - dockerlint -f Dockerfile
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - /^testdockerfile-v.*$/
+    - master
+  #allow_failure: true
+
+build:
+  stage: build
+  variables: *build_variables
+  script:
+    - export MAINTAINER_MAIL=$CI_PROJECT_NAMESPACE"@andared.ced.junta-andalucia.es"
+    - docker build $PROXY_ARG $LABELS_ARG --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg LBLDESCRIPTION="$CI_LBLDESCRIPTION" --build-arg MAINTAINER_MAIL="$MAINTAINER_MAIL" -t $REGISTRY_IMAGE:$TAG .
+    - mkdir image
+    - docker save $REGISTRY_IMAGE:$TAG > image/$CI_COMMIT_REF_NAME.tar
+    - ls -lah image/
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+    - master
+  dependencies:
+    - test:dockerfilelint
+  artifacts:
+    paths:
+      - image
+    when: on_success
+    expire_in: 45 min # tiempo de duración del artefacto
+
+.push_template: &push_definition
+  stage: push
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+  except:
+    - master
+
+push:review:
+  <<: *push_definition
+  script:
+    - docker load -i image/$CI_COMMIT_REF_NAME.tar
+    - docker login -u $ID_REGISTRY -p $REGISTRY_PASS $URL_REGISTRY
+    - docker push $REGISTRY_IMAGE:$TAG
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+  dependencies:
+    - build
+
+push:staging:
+  stage: push
+  script:
+    - docker load -i image/$CI_COMMIT_REF_NAME.tar
+    - docker login -u $ID_REGISTRY -p $REGISTRY_PASS $URL_REGISTRY
+    - docker push $REGISTRY_IMAGE:$TAG
+  environment:
+    name: staging
+  dependencies:
+    - build
+  only:
+    - master
+
+push:dev:
+  stage: push
+  script:
+    - docker load -i image/$CI_COMMIT_REF_NAME.tar
+    - docker login -u $ID_REGISTRY -p $REGISTRY_PASS $URL_REGISTRY
+    - docker tag $REGISTRY_IMAGE:$TAG $REGISTRY_IMAGE:develop
+    - docker push $REGISTRY_IMAGE:develop
+    - docker images $REGISTRY_IMAGE:develop
+  environment:
+    name: development
+  dependencies:
+    - build
+  when: manual
+  only:
+    - /^builddev-v.*$/
+
+push:prod:
+  stage: push
+  script:
+    - docker load -i image/$CI_COMMIT_REF_NAME.tar
+    - docker login -u $ID_REGISTRY -p $REGISTRY_PASS $URL_REGISTRY
+    - docker tag $REGISTRY_IMAGE:$TAG $REGISTRY_IMAGE:latest
+    - docker push $REGISTRY_IMAGE:latest
+    - docker images $REGISTRY_IMAGE:latest
+  environment:
+    name: production
+  dependencies:
+    - build
+  when: manual
+  only:
+    - master
+
+clean:
+  stage: clean
+  script:
+    - docker images -f "before=$REGISTRY_IMAGE:$TAG"|grep build >/dev/null && docker rmi -f $(docker images -f "before=$REGISTRY_IMAGE:$TAG"|grep build|awk '{print $3}'|uniq) || true
+  only:
+    - /^build-v.*$/
+    - /^buildft-v.*$/
+    - /^buildhf-v.*$/
+    - /^buildrf-v.*$/
+    - /^builddev-v.*$/
+  when: on_success

@@ -1,19 +1,19 @@
 database:
-  host:              localhost
-  user:              sigila-alarmas
-  password:          sigila-alarmas
-  db:                sigila-alarmas
+  host:              %DB_SERVER_HOST%
+  user:              %MYSQL_USER%
+  password:          %MYSQL_PASSWORD%
+  db:                %MYSQL_DATABASE%
 
 nagios_servers:
   servers:
-    - nagios-se
-    - nagios-al
-    - nagios-ca
-    - nagios-hu
-    - nagios-ja
-    - nagios-gr
-    - nagios-ma
-    - nagios-co
+    - nagios-se.andared.ced.junta-andalucia.es
+    - nagios-al.andared.ced.junta-andalucia.es
+    - nagios-ca.andared.ced.junta-andalucia.es
+    - nagios-hu.andared.ced.junta-andalucia.es
+    - nagios-ja.andared.ced.junta-andalucia.es
+    - nagios-gr.andared.ced.junta-andalucia.es
+    - nagios-ma.andared.ced.junta-andalucia.es
+    - nagios-co.andared.ced.junta-andalucia.es
   url:               query
   key:               Z0eoG3R01RRiiX9M3ZRY6myA1690g2kW
   content-type:      application/json
